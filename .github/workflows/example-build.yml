@@ -1,0 +1,59 @@
+name: Example - Build + Veracode
+
+on:
+  workflow_dispatch:
+
+jobs:
+  maven-us:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Veracode Integration Hub (Maven + US)
+        uses: ./veracode-integration-hub
+        with:
+          enableUS: "true"
+          maven: "true"
+          javaVersion: "17"
+          mavenCmd: "mvn -B -DskipTests package"
+          veracodeApiId: ${{ secrets.VERACODE_API_ID }}
+          veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
+
+  ap-us:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Veracode Integration Hub (AP + US)
+        uses: ./veracode-integration-hub
+        with:
+          enableUS: "true"
+          enableAP: "true"
+          veracodeApiId: ${{ secrets.VERACODE_API_ID }}
+          veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
+
+  artifact-us:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build local (exemplo)
+        run: |
+          mkdir -p dist && echo hello > dist/app.txt && (cd dist && zip -q app.zip app.txt)
+      - name: Veracode Integration Hub (Artefato + US)
+        uses: ./veracode-integration-hub
+        with:
+          enableUS: "true"
+          artifact: "true"
+          artifactName: "dist/app.zip"
+          veracodeApiId: ${{ secrets.VERACODE_API_ID }}
+          veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
+
+  iac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Veracode Integration Hub (IaC)
+        uses: ./veracode-integration-hub
+        with:
+          enableIAC: "true"
+          veracodeApiId: ${{ secrets.VERACODE_API_ID }}
+          veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
+

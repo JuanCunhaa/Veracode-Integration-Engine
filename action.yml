@@ -1,0 +1,612 @@
+ # Explicação: Composite Action que integra e orquestra scans Veracode com builds e empacotamento padronizados.
+name: "Veracode Integration Hub"
+description: "Composite Action que centraliza integrações Veracode: SCA, Upload & Scan, Pipeline Scan, IaC e Auto Packager."
+author: "Your Org"
+branding:
+  icon: "shield"
+  color: "green"
+
+inputs:
+  enableSCA:
+    description: "Executa SCA"
+    required: false
+    default: "false"
+  enableUS:
+    description: "Executa Upload & Scan"
+    required: false
+    default: "false"
+  enablePS:
+    description: "Executa Pipeline Scan"
+    required: false
+    default: "false"
+  enableIAC:
+    description: "Executa IaC Scan"
+    required: false
+    default: "false"
+  enableAP:
+    description: "Executa Auto Packager"
+    required: false
+    default: "false"
+
+ 
+  java:
+    description: "Ativa build Java"
+    required: false
+    default: "false"
+  dotnet:
+    description: "Ativa build .NET"
+    required: false
+    default: "false"
+  gradle:
+    description: "Ativa build Gradle"
+    required: false
+    default: "false"
+  maven:
+    description: "Ativa build Maven"
+    required: false
+    default: "false"
+  kotlin:
+    description: "Ativa build Kotlin"
+    required: false
+    default: "false"
+  go:
+    description: "Ativa build Go"
+    required: false
+    default: "false"
+
+  # Params específicos de linguagem/build
+ 
+  javaVersion:
+    description: "Versão do Java (ex: 17)"
+    required: false
+    default: "17"
+  javaDistribution:
+    description: "Distribuição Java (ex: temurin)"
+    required: false
+    default: "temurin"
+  javaBuildCmd:
+    description: "Comando customizado de build Java (quando não usa Maven/Gradle)"
+    required: false
+    default: ""
+  javaSourceDir:
+    description: "Diretório de fontes Java (ex.: src/main/java)"
+    required: false
+    default: "src/main/java"
+  javaResourcesDir:
+    description: "Diretório de resources (ex.: src/main/resources)"
+    required: false
+    default: "src/main/resources"
+  javaLibDir:
+    description: "Diretório com dependências (.jar) opcionais a incluir no pacote"
+    required: false
+    default: "lib"
+  javaJarName:
+    description: "Nome do JAR gerado quando build Java puro (sem Maven/Gradle)"
+    required: false
+    default: "app.jar"
+  javaMainClass:
+    description: "Main-Class para manifest (opcional)"
+    required: false
+    default: ""
+  javaOutputDir:
+    description: "Diretório de saída do pacote (zip) para Java"
+    required: false
+    default: "dist/veracode-java"
+  javaAdditionalJavacArgs:
+    description: "Args extras para javac (além de -g)"
+    required: false
+    default: ""
+  javaAdditionalJarArgs:
+    description: "Args extras para jar"
+    required: false
+    default: ""
+ 
+  mavenCmd:
+    description: "Comando Maven"
+    required: false
+    default: "mvn -B -DskipTests package"
+  mavenWrapperPath:
+    description: "Caminho do Maven Wrapper"
+    required: false
+    default: "./mvnw"
+  mavenGoals:
+    description: "Goals Maven (usado se mavenCmd vazio)"
+    required: false
+    default: "-B -DskipTests package"
+  mavenProjectDir:
+    description: "Diretório do projeto Maven (submódulo)"
+    required: false
+    default: "."
+  mavenOptions:
+    description: "Opções adicionais do Maven (ex.: -Pprofile --no-transfer-progress)"
+    required: false
+    default: "--no-transfer-progress"
+  mavenOutputDir:
+    description: "Diretório de saída do pacote (zip)"
+    required: false
+    default: "dist/veracode-maven"
+ 
+  gradleCmd:
+    description: "Comando Gradle"
+    required: false
+    default: "./gradlew build -x test"
+  gradleWrapperPath:
+    description: "Caminho do Gradle Wrapper"
+    required: false
+    default: "./gradlew"
+  gradleTasks:
+    description: "Tasks do Gradle (usado se gradleCmd vazio)"
+    required: false
+    default: "assemble -x test"
+  gradleProjectDir:
+    description: "Diretório do projeto Gradle (submódulo)"
+    required: false
+    default: "."
+  gradleOptions:
+    description: "Opções adicionais para o Gradle (ex.: --stacktrace --no-daemon)"
+    required: false
+    default: "--no-daemon"
+  gradleIncludeDists:
+    description: "Incluir build/distributions/*.zip no pacote"
+    required: false
+    default: "true"
+  gradleOutputDir:
+    description: "Diretório de saída do pacote (zip)"
+    required: false
+    default: "dist/veracode-gradle"
+ 
+  dotnetVersion:
+    description: "Versão do .NET (ex: 7.0.x)"
+    required: false
+    default: "7.0.x"
+  dotnetBuildCmd:
+    description: ".NET build command"
+    required: false
+    default: "dotnet build -c Release"
+  dotnetRestore:
+    description: "Executar 'dotnet restore' antes do build"
+    required: false
+    default: "false"
+  dotnetRestoreCmd:
+    description: "Comando customizado para restore (.NET)"
+    required: false
+    default: "dotnet restore"
+  nugetConfigPath:
+    description: "Caminho para NuGet.config (opcional)"
+    required: false
+    default: ""
+  nugetSource:
+    description: "URL do feed NuGet (opcional, pode ser público)"
+    required: false
+    default: ""
+  nugetUsername:
+    description: "Usuário do feed NuGet (se necessário)"
+    required: false
+    default: ""
+  nugetPassword:
+    description: "Senha/token do feed NuGet (se necessário)"
+    required: false
+    default: ""
+  dotnetProject:
+    description: "Caminho do .csproj a ser publicado (prioridade sobre solution)"
+    required: false
+    default: ""
+  dotnetSolution:
+    description: "Caminho do .sln (se informado e sem project, faz build/publish dos projetos)"
+    required: false
+    default: ""
+  dotnetConfiguration:
+    description: "Configuração de build .NET (Release/Debug)"
+    required: false
+    default: "Release"
+  dotnetRuntime:
+    description: "Runtime Identifier (RID), ex: win-x64, linux-x64 (opcional)"
+    required: false
+    default: ""
+  dotnetSelfContained:
+    description: "Publicar self-contained (true/false)"
+    required: false
+    default: "false"
+  dotnetPublishSingleFile:
+    description: "Publicar em arquivo único (true/false)"
+    required: false
+    default: "false"
+  dotnetIncludeSymbols:
+    description: "Incluir símbolos de debug (.pdb) no pacote (true/false)"
+    required: false
+    default: "true"
+  dotnetOutputDir:
+    description: "Diretório de saída do pacote (zip)"
+    required: false
+    default: "dist/veracode-dotnet"
+  dotnetAdditionalArgs:
+    description: "Argumentos adicionais para o dotnet publish (ex: -p:DefineConstants=VERACODE)"
+    required: false
+    default: ""
+ 
+  kotlinCmd:
+    description: "Comando Kotlin (em geral via Gradle)"
+    required: false
+    default: "./gradlew build -x test"
+  kotlinWrapperPath:
+    description: "Caminho do Gradle Wrapper para Kotlin"
+    required: false
+    default: "./gradlew"
+  kotlinTasks:
+    description: "Tasks do Gradle para Kotlin (usado se kotlinCmd vazio)"
+    required: false
+    default: "assemble -x test"
+  kotlinProjectDir:
+    description: "Diretório do projeto Kotlin (submódulo)"
+    required: false
+    default: "."
+  kotlinOptions:
+    description: "Opções adicionais para o Gradle (ex.: --stacktrace --no-daemon)"
+    required: false
+    default: "--no-daemon"
+  kotlinIncludeDists:
+    description: "Incluir build/distributions/*.zip no pacote"
+    required: false
+    default: "true"
+  kotlinOutputDir:
+    description: "Diretório de saída do pacote (zip)"
+    required: false
+    default: "dist/veracode-kotlin"
+ 
+  goVersion:
+    description: "Versão do Go"
+    required: false
+    default: "1.21.x"
+  goBuildCmd:
+    description: "Comando Go build"
+    required: false
+    default: "go build ./..."
+  goMain:
+    description: "Pacote/dir principal (ex: ./cmd/api ou ./) para build; se vazio, detecta todos os packages main"
+    required: false
+    default: ""
+  goOS:
+    description: "GOOS (ex: linux, windows, darwin). Vazio = runner atual"
+    required: false
+    default: ""
+  goArch:
+    description: "GOARCH (ex: amd64, arm64). Vazio = runner atual"
+    required: false
+    default: ""
+  goCGOEnabled:
+    description: "CGO_ENABLED (0|1)"
+    required: false
+    default: "0"
+  goLDFlags:
+    description: "Flags para -ldflags (não incluir -s -w por padrão para manter símbolos)"
+    required: false
+    default: ""
+  goTags:
+    description: "Build tags (ex: netgo,osusergo)"
+    required: false
+    default: ""
+  goOutputDir:
+    description: "Diretório de saída do pacote (zip)"
+    required: false
+    default: "dist/veracode-go"
+  goBinaryName:
+    description: "Nome do binário de saída (para um único main). Em multiplos, cada um usa seu diretório base."
+    required: false
+    default: ""
+  goAdditionalArgs:
+    description: "Args extras para o 'go build'"
+    required: false
+    default: ""
+  goModVendor:
+    description: "Executar 'go mod vendor' antes do build"
+    required: false
+    default: "false"
+  goGenerate:
+    description: "Executar 'go generate ./...' antes do build"
+    required: false
+    default: "false"
+  goRace:
+    description: "Habilitar corrida (-race)"
+    required: false
+    default: "false"
+
+ 
+  artifact:
+    description: "Indica se será usado artefato manual"
+    required: false
+    default: "false"
+  artifactName:
+    description: "Nome/caminho do artefato (obrigatório se artifact=true)"
+    required: false
+    default: ""
+
+ 
+  veracodeApiId:
+    description: "ID da API do Veracode"
+    required: false
+  veracodeApiKey:
+    description: "Key da API do Veracode"
+    required: false
+  scaToken:
+    description: "Token do SCA (se enableSCA=true)"
+    required: false
+  iacToken:
+    description: "Token do IaC (se enableIAC=true)"
+    required: false
+ 
+  workingDirectory:
+    description: "Diretório base"
+    required: false
+    default: "."
+  debug:
+    description: "Modo detalhado de log"
+    required: false
+    default: "false"
+
+outputs:
+  upload_guid:
+    description: "GUID retornado pelo Veracode após Upload & Scan"
+    value: ${{ steps.us-step.outputs.upload_guid }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: ⚙️ Validando parâmetros e secrets
+      id: validate
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        INPUTS_JSON: ${{ toJson(inputs) }}
+      run: |
+        bash "${{ github.action_path }}/scripts/validate_inputs.sh"
+
+    - name: 📥 Instalar Veracode CLI
+      if: ${{ inputs.enableAP == 'true' || inputs.enableIAC == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      run: |
+        bash "${{ github.action_path }}/scripts/ensure_veracode_cli.sh"
+
+    # Preparação de ambientes
+    - name: ☕ Setup Java
+      if: ${{ inputs.java == 'true' || inputs.maven == 'true' || inputs.gradle == 'true' || inputs.kotlin == 'true' || inputs.enableUS == 'true' || inputs.enablePS == 'true' }}
+      uses: actions/setup-java@v4
+      with:
+        distribution: ${{ inputs.javaDistribution }}
+        java-version: ${{ inputs.javaVersion }}
+
+    - name: 🧰 Setup Gradle cache (opcional)
+      if: ${{ inputs.gradle == 'true' || inputs.kotlin == 'true' }}
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: 🟦 Setup .NET
+      if: ${{ inputs.dotnet == 'true' }}
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnetVersion }}
+
+    - name: 🐹 Setup Go
+      if: ${{ inputs.go == 'true' }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.goVersion }}
+
+    # Build condicional
+    - name: 📦 Build Maven
+      if: ${{ inputs.maven == 'true' }}
+      id: build-maven
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        MVN_CMD: ${{ inputs.mavenCmd }}
+        MVN_WRAPPER: ${{ inputs.mavenWrapperPath }}
+        MVN_GOALS: ${{ inputs.mavenGoals }}
+        MVN_PROJECT_DIR: ${{ inputs.mavenProjectDir }}
+        MVN_OPTIONS: ${{ inputs.mavenOptions }}
+        MVN_OUTPUT_DIR: ${{ inputs.mavenOutputDir }}
+      run: |
+        bash "${{ github.action_path }}/services/build/maven.sh"
+
+    - name: 📦 Build Java (puro)
+      if: ${{ inputs.java == 'true' }}
+      id: build-java
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        JAVA_BUILD_CMD: ${{ inputs.javaBuildCmd }}
+        JAVA_SOURCE_DIR: ${{ inputs.javaSourceDir }}
+        JAVA_RES_DIR: ${{ inputs.javaResourcesDir }}
+        JAVA_LIB_DIR: ${{ inputs.javaLibDir }}
+        JAVA_JAR_NAME: ${{ inputs.javaJarName }}
+        JAVA_MAIN_CLASS: ${{ inputs.javaMainClass }}
+        JAVA_OUTPUT_DIR: ${{ inputs.javaOutputDir }}
+        JAVA_ADDITIONAL_JAVAC_ARGS: ${{ inputs.javaAdditionalJavacArgs }}
+        JAVA_ADDITIONAL_JAR_ARGS: ${{ inputs.javaAdditionalJarArgs }}
+      run: |
+        bash "${{ github.action_path }}/services/build/java.sh"
+
+    - name: 📦 Build Gradle
+      if: ${{ inputs.gradle == 'true' }}
+      id: build-gradle
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        GRADLE_CMD: ${{ inputs.gradleCmd }}
+        GRADLE_WRAPPER: ${{ inputs.gradleWrapperPath }}
+        GRADLE_TASKS: ${{ inputs.gradleTasks }}
+        GRADLE_PROJECT_DIR: ${{ inputs.gradleProjectDir }}
+        GRADLE_OPTIONS: ${{ inputs.gradleOptions }}
+        GRADLE_INCLUDE_DISTS: ${{ inputs.gradleIncludeDists }}
+        GRADLE_OUTPUT_DIR: ${{ inputs.gradleOutputDir }}
+      run: |
+        bash "${{ github.action_path }}/services/build/gradle.sh"
+
+    - name: 📦 Build .NET
+      if: ${{ inputs.dotnet == 'true' }}
+      id: build-dotnet
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        DOTNET_BUILD_CMD: ${{ inputs.dotnetBuildCmd }}
+        DOTNET_PROJECT: ${{ inputs.dotnetProject }}
+        DOTNET_SOLUTION: ${{ inputs.dotnetSolution }}
+        DOTNET_CONFIGURATION: ${{ inputs.dotnetConfiguration }}
+        DOTNET_RID: ${{ inputs.dotnetRuntime }}
+        DOTNET_SELF_CONTAINED: ${{ inputs.dotnetSelfContained }}
+        DOTNET_SINGLE_FILE: ${{ inputs.dotnetPublishSingleFile }}
+        DOTNET_INCLUDE_SYMBOLS: ${{ inputs.dotnetIncludeSymbols }}
+        DOTNET_OUTPUT_DIR: ${{ inputs.dotnetOutputDir }}
+        DOTNET_ADDITIONAL_ARGS: ${{ inputs.dotnetAdditionalArgs }}
+        DOTNET_RESTORE: ${{ inputs.dotnetRestore }}
+        DOTNET_RESTORE_CMD: ${{ inputs.dotnetRestoreCmd }}
+        NUGET_CONFIG_PATH: ${{ inputs.nugetConfigPath }}
+        NUGET_SOURCE: ${{ inputs.nugetSource }}
+        NUGET_USERNAME: ${{ inputs.nugetUsername }}
+        NUGET_PASSWORD: ${{ inputs.nugetPassword }}
+      run: |
+        bash "${{ github.action_path }}/services/build/dotnet.sh"
+
+    - name: 📦 Build Kotlin
+      if: ${{ inputs.kotlin == 'true' }}
+      id: build-kotlin
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        KOTLIN_CMD: ${{ inputs.kotlinCmd }}
+        KOTLIN_WRAPPER: ${{ inputs.kotlinWrapperPath }}
+        KOTLIN_TASKS: ${{ inputs.kotlinTasks }}
+        KOTLIN_PROJECT_DIR: ${{ inputs.kotlinProjectDir }}
+        KOTLIN_OPTIONS: ${{ inputs.kotlinOptions }}
+        KOTLIN_INCLUDE_DISTS: ${{ inputs.kotlinIncludeDists }}
+        KOTLIN_OUTPUT_DIR: ${{ inputs.kotlinOutputDir }}
+      run: |
+        bash "${{ github.action_path }}/services/build/kotlin.sh"
+
+    - name: 📦 Build Go
+      if: ${{ inputs.go == 'true' }}
+      id: build-go
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        GO_BUILD_CMD: ${{ inputs.goBuildCmd }}
+        GO_MAIN: ${{ inputs.goMain }}
+        GO_OS: ${{ inputs.goOS }}
+        GO_ARCH: ${{ inputs.goArch }}
+        GO_CGO: ${{ inputs.goCGOEnabled }}
+        GO_LDFLAGS: ${{ inputs.goLDFlags }}
+        GO_TAGS: ${{ inputs.goTags }}
+        GO_OUTPUT_DIR: ${{ inputs.goOutputDir }}
+        GO_BINARY_NAME: ${{ inputs.goBinaryName }}
+        GO_ADDITIONAL_ARGS: ${{ inputs.goAdditionalArgs }}
+        GO_MOD_VENDOR: ${{ inputs.goModVendor }}
+        GO_GENERATE: ${{ inputs.goGenerate }}
+        GO_RACE: ${{ inputs.goRace }}
+      run: |
+        bash "${{ github.action_path }}/services/build/go.sh"
+
+    # Auto Packager
+    - name: 🧰 Auto Packager
+      if: ${{ inputs.enableAP == 'true' }}
+      id: ap-step
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      run: |
+        bash "${{ github.action_path }}/services/veracode/autopackager.sh"
+
+    # Artefato manual (validação)
+    - name: 🔎 Validando artefato manual
+      if: ${{ inputs.artifact == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        ARTIFACT_NAME: ${{ inputs.artifactName }}
+      run: |
+        bash "${{ github.action_path }}/scripts/helpers.sh" assert_artifact_exists "$ARTIFACT_NAME"
+
+    # Execução dos Scans
+    
+    - name: 🔧 Resolver artefato para scans
+      id: resolve-artifact
+      if: ${{ inputs.enableUS == 'true' || inputs.enablePS == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        ARTIFACT_INPUT: ${{ inputs.artifact }}
+        ARTIFACT_NAME: ${{ inputs.artifactName }}
+      run: |
+        set -euo pipefail
+        bash "${{ github.action_path }}/scripts/helpers.sh" >/dev/null 2>&1 || true
+        source "${{ github.action_path }}/scripts/helpers.sh"
+        if [[ "${ARTIFACT_INPUT}" == "true" ]]; then
+          if [[ -z "${ARTIFACT_NAME}" ]]; then
+            echo "artifact_path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "artifact_path=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if [[ -f "veracode_package.zip" ]]; then
+          echo "artifact_path=veracode_package.zip" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if ART=$(detect_default_artifact); then
+          echo "artifact_path=${ART}" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "artifact_path=" >> "$GITHUB_OUTPUT"
+
+    - name: ❌ Verificar artefato para US/PS
+      if: ${{ (inputs.enableUS == 'true' || inputs.enablePS == 'true') && steps.resolve-artifact.outputs.artifact_path == '' }}
+      shell: bash
+      run: |
+        echo "❌ Nenhum artefato encontrado para os scans. Use enableAP=true, habilite um build ou forneça artifactName."
+        exit 1
+
+    - name: 🧪 SCA Scan
+      if: ${{ inputs.enableSCA == 'true' }}
+      id: sca-step
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        SRCCLR_API_TOKEN: ${{ inputs.scaToken }}
+        DEBUG_LOG: ${{ inputs.debug }}
+      run: |
+        bash "${{ github.action_path }}/services/veracode/sca.sh"
+
+    - name: 🚀 Pipeline Scan
+      if: ${{ inputs.enablePS == 'true' }}
+      id: ps-step
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        VERACODE_API_ID: ${{ inputs.veracodeApiId }}
+        VERACODE_API_KEY: ${{ inputs.veracodeApiKey }}
+        DEBUG_LOG: ${{ inputs.debug }}
+        ARTIFACT_PATH: ${{ steps.resolve-artifact.outputs.artifact_path }}
+      run: |
+        bash "${{ github.action_path }}/services/veracode/pipeline_scan.sh"
+
+    - name: ☁️ Upload & Scan (Plataforma)
+      if: ${{ inputs.enableUS == 'true' }}
+      id: us-step
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        VERACODE_API_ID: ${{ inputs.veracodeApiId }}
+        VERACODE_API_KEY: ${{ inputs.veracodeApiKey }}
+        DEBUG_LOG: ${{ inputs.debug }}
+        ARTIFACT_PATH: ${{ steps.resolve-artifact.outputs.artifact_path }}
+      run: |
+        bash "${{ github.action_path }}/services/veracode/upload_and_scan.sh"
+
+    - name: 🏗️ IaC Scan
+      if: ${{ inputs.enableIAC == 'true' }}
+      id: iac-step
+      shell: bash
+      working-directory: ${{ inputs.workingDirectory }}
+      env:
+        VERACODE_API_ID: ${{ inputs.veracodeApiId }}
+        VERACODE_API_KEY: ${{ inputs.veracodeApiKey }}
+        DEBUG_LOG: ${{ inputs.debug }}
+      run: |
+        bash "${{ github.action_path }}/services/veracode/iac_scan.sh"

@@ -1,0 +1,17 @@
+name: Example - Basic SCA
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  sca-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Veracode Integration Hub (SCA)
+        uses: ./veracode-integration-hub
+        with:
+          enableSCA: "true"
+          scaToken: ${{ secrets.SRCCLR_API_TOKEN }}
+

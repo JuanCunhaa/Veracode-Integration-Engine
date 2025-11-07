@@ -1,0 +1,23 @@
+name: Example - Pipeline Scan Only
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  pipeline-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sample package
+        run: |
+          mkdir -p dist && echo hello > dist/app.txt && (cd dist && zip -q app.zip app.txt)
+      - name: Veracode Integration Hub (Pipeline Scan)
+        uses: ./veracode-integration-hub
+        with:
+          enablePS: "true"
+          artifact: "true"
+          artifactName: "dist/app.zip"
+          veracodeApiId: ${{ secrets.VERACODE_API_ID }}
+          veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
+
