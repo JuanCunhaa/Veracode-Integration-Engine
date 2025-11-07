@@ -1,7 +1,7 @@
  # Explicação: Composite Action que integra e orquestra scans Veracode com builds e empacotamento padronizados.
-name: "Veracode Integration Hub"
-description: "Composite Action que centraliza integrações Veracode: SCA, Upload & Scan, Pipeline Scan, IaC e Auto Packager."
-author: "Your Org"
+name: "Veracode Integration Engine"
+description: "Veracode Integration Engine (VIE) é um framework modular de integração contínua projetado para automatizar e padronizar o uso das soluções Veracode — SAST, SCA, Pipeline Scan e IaC — em pipelines multilinguagem (.NET, Java, Kotlin, Gradle, Maven e mais)."
+author: "JuanCunhaa"
 branding:
   icon: "shield"
   color: "green"

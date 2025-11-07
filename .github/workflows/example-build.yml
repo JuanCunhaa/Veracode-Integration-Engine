@@ -2,6 +2,8 @@ name: Example - Build + Veracode
 
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 
 jobs:
   maven-us:
@@ -9,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Veracode Integration Hub (Maven + US)
-        uses: ./veracode-integration-hub
+        uses: JuanCunhaa/Veracode-Integration-Engine@main
         with:
           enableUS: "true"
           maven: "true"
@@ -23,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Veracode Integration Hub (AP + US)
-        uses: ./veracode-integration-hub
+        uses: JuanCunhaa/Veracode-Integration-Engine@main
         with:
           enableUS: "true"
           enableAP: "true"
@@ -38,7 +40,7 @@ jobs:
         run: |
           mkdir -p dist && echo hello > dist/app.txt && (cd dist && zip -q app.zip app.txt)
       - name: Veracode Integration Hub (Artefato + US)
-        uses: ./veracode-integration-hub
+        uses: JuanCunhaa/Veracode-Integration-Engine@main
         with:
           enableUS: "true"
           artifact: "true"
@@ -51,9 +53,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Veracode Integration Hub (IaC)
-        uses: ./veracode-integration-hub
+        uses: JuanCunhaa/Veracode-Integration-Engine@main
         with:
           enableIAC: "true"
           veracodeApiId: ${{ secrets.VERACODE_API_ID }}
           veracodeApiKey: ${{ secrets.VERACODE_API_KEY }}
-

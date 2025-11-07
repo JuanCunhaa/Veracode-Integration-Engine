@@ -3,6 +3,8 @@ name: Example - Basic SCA
 on:
   push:
     branches: [ main ]
+permissions:
+  contents: read
 
 jobs:
   sca-only:
@@ -10,8 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Veracode Integration Hub (SCA)
-        uses: ./veracode-integration-hub
+        uses: JuanCunhaa/Veracode-Integration-Engine@main
         with:
           enableSCA: "true"
           scaToken: ${{ secrets.SRCCLR_API_TOKEN }}
-
